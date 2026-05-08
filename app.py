@@ -39,4 +39,4 @@ vectors_json = json.dumps(st.session_state.vectors)
 html = (Path(__file__).parent / "viz.html").read_text()
 html = html.replace("__VECTORS__", vectors_json)
 
-st.html(html, height=860)
+st.components.v1.html(html, height=860, scrolling=False)
