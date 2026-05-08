@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Georgia","Times New Roman",serif;background:#fff;color:#222;}
+.wrap{max-width:1100px;margin:0 auto;padding:8px 16px;}
+h1{font-size:1.35rem;font-weight:600;letter-spacing:0.02em;margin-bottom:2px;}
+.sub{font-size:0.82rem;color:#666;margin-bottom:10px;font-style:italic;}
+.ctrl{display:flex;align-items:center;gap:16px;padding:8px 12px;
+      background:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;margin-bottom:8px;}
+.ctrl label{font-size:0.9rem;white-space:nowrap;}
+.ctrl input[type=range]{flex:1;max-width:500px;height:4px;-webkit-appearance:none;
+      appearance:none;background:#ccc;border-radius:2px;outline:none;}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+      width:14px;height:14px;border-radius:50%;background:#444;cursor:pointer;border:2px solid #fff;
+      box-shadow:0 0 2px rgba(0,0,0,0.3);}
+.readout{font-size:0.88rem;font-family:"Courier New",monospace;color:#333;white-space:nowrap;}
+#plot{width:100%;height:700px;}
+.vtable{margin-top:6px;border-collapse:collapse;width:100%;font-size:0.8rem;
+        font-family:"Courier New",monospace;}
+.vtable th{background:#f0f0f0;border:1px solid #ddd;padding:4px 8px;
+           font-weight:600;text-align:center;font-size:0.75rem;color:#555;}
+.vtable td{border:1px solid #e8e8e8;padding:3px 8px;text-align:center;}
+.vtable tr:nth-child(even){background:#fafafa;}
+#vec-section{display:none;margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Minkowski Spacetime Diagram</h1>
+  <p class="sub">Lorentz boost between inertial reference frames S and S'</p>
+  <div class="ctrl">
+    <label>&#946; = v/c</label>
+    <input type="range" id="bslider" min="-0.99" max="0.99" step="0.002" value="0">
+    <span class="readout" id="ro">&#946; = 0.000 &ensp; &#947; = 1.000</span>
+  </div>
+  <div id="plot"></div>
+  <div id="vec-section">
+    <table class="vtable">
+      <thead><tr><th></th><th>x' (S')</th><th>ct' (S')</th><th>x (S)</th><th>ct (S)</th><th>s&sup2;</th></tr></thead>
+      <tbody id="vtbody"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+const VEC = __VECTORS__;
+const R = 4;
+const N = 350;
+const C = {
+  sAx:'#444', spX:'#a63a2f', spCT:'#1f5fa6',
+  hyp:'rgba(160,160,160,0.45)', lc:'rgba(190,165,50,0.5)',
+  sUnit:'#666', grid:'#f0f0f0',
+  vc:['#2a7f2a','#7b4ea3','#b07328','#c44e8a','#1a9faa','#8a8a2a']
+};
+
+function linspace(a,b,n){const o=[];for(let i=0;i<n;i++)o.push(a+(b-a)*i/(n-1));return o;}
+
+function buildData(beta){
+  const g=1/Math.sqrt(1-beta*beta);
+  const tp=linspace(-R,R,N);
+  const traces=[];
+
+  // Hyperbolas x^2-ct^2=1
+  traces.push({x:tp.map(t=>Math.sqrt(1+t*t)),y:tp,mode:'lines',
+    line:{color:C.hyp,width:1,dash:'dash'},hoverinfo:'skip',showlegend:false});
+  traces.push({x:tp.map(t=>-Math.sqrt(1+t*t)),y:tp,mode:'lines',
+    line:{color:C.hyp,width:1,dash:'dash'},hoverinfo:'skip',showlegend:false});
+  // ct^2-x^2=1
+  traces.push({x:tp,y:tp.map(t=>Math.sqrt(1+t*t)),mode:'lines',
+    line:{color:C.hyp,width:1,dash:'dash'},hoverinfo:'skip',showlegend:false});
+  traces.push({x:tp,y:tp.map(t=>-Math.sqrt(1+t*t)),mode:'lines',
+    line:{color:C.hyp,width:1,dash:'dash'},hoverinfo:'skip',showlegend:false});
+
+  // Light cone
+  traces.push({x:[-R,R],y:[-R,R],mode:'lines',line:{color:C.lc,width:1,dash:'dot'},
+    name:'light cone',hoverinfo:'skip'});
+  traces.push({x:[-R,R],y:[R,-R],mode:'lines',line:{color:C.lc,width:1,dash:'dot'},
+    showlegend:false,hoverinfo:'skip'});
+
+  // S axes
+  traces.push({x:[-R,R],y:[0,0],mode:'lines',line:{color:C.sAx,width:1.2},name:'x (S)',hoverinfo:'skip'});
+  traces.push({x:[0,0],y:[-R,R],mode:'lines',line:{color:C.sAx,width:1.2},name:'ct (S)',hoverinfo:'skip'});
+
+  // S' axes
+  traces.push({x:[-R,R],y:[beta*(-R),beta*R],mode:'lines',
+    line:{color:C.spX,width:1.6},name:"x' (S')",hoverinfo:'skip'});
+  traces.push({x:[beta*(-R),beta*R],y:[-R,R],mode:'lines',
+    line:{color:C.spCT,width:1.6},name:"ct' (S')",hoverinfo:'skip'});
+
+  // S unit markers
+  traces.push({x:[1],y:[0],mode:'markers',marker:{color:C.sUnit,size:5,symbol:'circle'},
+    showlegend:false,hovertemplate:'S unit: x=1<extra></extra>'});
+  traces.push({x:[0],y:[1],mode:'markers',marker:{color:C.sUnit,size:5,symbol:'circle'},
+    showlegend:false,hovertemplate:'S unit: ct=1<extra></extra>'});
+
+  // S' unit markers (on hyperbolas)
+  traces.push({x:[g],y:[g*beta],mode:'markers',marker:{color:C.spX,size:6,symbol:'circle'},
+    showlegend:false,hovertemplate:"x'=1 unit<br>x=%{x:.3f}<br>ct=%{y:.3f}<extra></extra>"});
+  traces.push({x:[g*beta],y:[g],mode:'markers',marker:{color:C.spCT,size:6,symbol:'circle'},
+    showlegend:false,hovertemplate:"ct'=1 unit<br>x=%{x:.3f}<br>ct=%{y:.3f}<extra></extra>"});
+
+  // Custom vectors (defined in S', transformed to S)
+  const annotations=[];
+  for(let i=0;i<VEC.length;i++){
+    const xp=VEC[i].xp, ctp=VEC[i].ctp;
+    const xs=g*(xp+beta*ctp), cts=g*(ctp+beta*xp);
+    const vc=C.vc[i%C.vc.length];
+    traces.push({x:[0,xs],y:[0,cts],mode:'lines',line:{color:vc,width:2},
+      showlegend:false,hoverinfo:'skip'});
+    traces.push({x:[xs],y:[cts],mode:'markers',
+      marker:{color:vc,size:7,symbol:'diamond'},name:'V'+(i+1),
+      hovertemplate:"V"+(i+1)+"<br>S: ("+xs.toFixed(2)+", "+cts.toFixed(2)+")<br>S': ("+xp.toFixed(2)+", "+ctp.toFixed(2)+")<extra></extra>"});
+    annotations.push({x:xs,y:cts,ax:xs-6*(xs/Math.max(Math.hypot(xs,cts),0.01)),
+      ay:cts-6*(cts/Math.max(Math.hypot(xs,cts),0.01)),
+      xref:'x',yref:'y',axref:'pixel',ayref:'pixel',
+      showarrow:true,arrowhead:2,arrowsize:1.2,arrowwidth:1.8,arrowcolor:vc});
+  }
+  return{traces,annotations};
+}
+
+const layout={
+  xaxis:{range:[-R,R],zeroline:false,showgrid:true,gridcolor:C.grid,gridwidth:1,
+    title:{text:'x',font:{family:'Georgia',size:14}},dtick:1,
+    tickfont:{size:10,color:'#888'}},
+  yaxis:{range:[-R,R],zeroline:false,showgrid:true,gridcolor:C.grid,gridwidth:1,
+    title:{text:'ct',font:{family:'Georgia',size:14}},dtick:1,
+    scaleanchor:'x',scaleratio:1,tickfont:{size:10,color:'#888'}},
+  margin:{l:45,r:15,t:10,b:40},
+  plot_bgcolor:'#fff',paper_bgcolor:'#fff',
+  legend:{x:0.01,y:0.99,bgcolor:'rgba(255,255,255,0.85)',
+    bordercolor:'#ddd',borderwidth:1,font:{size:11,family:'Georgia'}},
+  dragmode:'pan',hovermode:'closest',
+  annotations:[]
+};
+
+function updateTable(beta){
+  if(!VEC.length){document.getElementById('vec-section').style.display='none';return;}
+  document.getElementById('vec-section').style.display='block';
+  const g=1/Math.sqrt(1-beta*beta);
+  let h='';
+  for(let i=0;i<VEC.length;i++){
+    const xp=VEC[i].xp,ctp=VEC[i].ctp;
+    const xs=g*(xp+beta*ctp),cts=g*(ctp+beta*xp);
+    const s2=ctp*ctp-xp*xp;
+    h+='<tr><td style="font-weight:600;color:'+C.vc[i%C.vc.length]+'">V'+(i+1)+'</td>';
+    h+='<td>'+xp.toFixed(3)+'</td><td>'+ctp.toFixed(3)+'</td>';
+    h+='<td>'+xs.toFixed(3)+'</td><td>'+cts.toFixed(3)+'</td>';
+    h+='<td>'+s2.toFixed(3)+'</td></tr>';
+  }
+  document.getElementById('vtbody').innerHTML=h;
+}
+
+function render(beta){
+  const g=1/Math.sqrt(1-beta*beta);
+  document.getElementById('ro').innerHTML=
+    '&#946; = '+beta.toFixed(3)+' &ensp; &#947; = '+g.toFixed(3);
+  const d=buildData(beta);
+  layout.annotations=d.annotations;
+  Plotly.react('plot',d.traces,layout,{scrollZoom:true,displayModeBar:false});
+  updateTable(beta);
+}
+
+render(0);
+document.getElementById('bslider').addEventListener('input',function(){
+  render(parseFloat(this.value));
+});
+</script>
+</body>
+</html>
