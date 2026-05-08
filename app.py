@@ -15,6 +15,43 @@ if 'vectors' not in st.session_state:
     st.session_state.vectors = []
 
 with st.sidebar:
+    st.markdown("### About")
+    st.markdown(
+        "This interactive diagram visualizes how two inertial "
+        "reference frames, S and S', are related by the "
+        "**Lorentz transformation** -- the fundamental symmetry "
+        "of special relativity that preserves the spacetime interval."
+    )
+
+    with st.expander("Theory", expanded=False):
+        st.markdown(
+            "An event with coordinates $(x, ct)$ in frame S "
+            "has coordinates in a frame S' moving with velocity "
+            "$v = \\beta c$ given by the boost:"
+        )
+        st.latex(r"""
+            \begin{pmatrix} x' \\ ct' \end{pmatrix}
+            = \gamma
+            \begin{pmatrix} 1 & -\beta \\ -\beta & 1 \end{pmatrix}
+            \begin{pmatrix} x \\ ct \end{pmatrix},
+            \quad
+            \gamma = \frac{1}{\sqrt{1 - \beta^2}}
+        """)
+        st.markdown(
+            "The quantity $s^2 = (ct)^2 - x^2$ is invariant under "
+            "this transformation. Curves of constant $s^2$ form "
+            "**hyperbolas** on the diagram. As $\\beta$ varies, the "
+            "unit basis vectors of S' slide along the unit hyperbolas "
+            "$x^2 - (ct)^2 = \\pm 1$, illustrating how the geometry "
+            "of spacetime differs from Euclidean space."
+        )
+        st.markdown(
+            "The dashed diagonal lines represent the **light cone** "
+            "($x = \\pm ct$), which remains invariant under all "
+            "Lorentz boosts."
+        )
+
+    st.markdown("---")
     st.markdown("### Vector Input (S' frame)")
     st.caption("Coordinates are defined in the moving frame S' and will transform with it as you change the velocity.")
     with st.form("add_vec", clear_on_submit=True):
